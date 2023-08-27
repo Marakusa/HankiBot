@@ -1,33 +1,58 @@
 ﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
-using Newtonsoft.Json;
+using HankiBot.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HankiBot;
 
 public class Program
 {
-    private DiscordSocketClient? _client;
-
-    public static Task Main(string[] args) => new Program().MainAsync();
+    private static void Main(string[] args)
+    {
+        new Program()
+            .MainAsync()
+            .GetAwaiter()
+            .GetResult();
+    }
 
     public async Task MainAsync()
     {
-        _client = new DiscordSocketClient();
+        await using ServiceProvider services = ConfigureServices();
 
-        _client.Log += Log;
+        DiscordSocketClient client = services.GetRequiredService<DiscordSocketClient>();
+
+        client.Log += LogAsync;
+        services.GetRequiredService<CommandService>().Log += LogAsync;
         
-        string? token = JsonConvert.DeserializeObject<Configurations>(await File.ReadAllTextAsync("config.json"))?.Token;
+        await client.LoginAsync(TokenType.Bot, Globals.Token);
+        await client.StartAsync();
 
-        await _client.LoginAsync(TokenType.Bot, token);
-        await _client.StartAsync();
+        await client.SetCustomStatusAsync($"With the rubber rats | {Globals.CommandPrefix}h");
 
-        // Block this task until the program is closed.
-        await Task.Delay(-1);
+        // Here we initialize the logic required to register our commands.
+        await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
+
+        await Task.Delay(Timeout.Infinite);
     }
 
-    private Task Log(LogMessage msg)
+    private static ServiceProvider ConfigureServices()
     {
-        Console.WriteLine(msg.ToString());
+        return new ServiceCollection()
+            .AddSingleton(new DiscordSocketConfig
+            {
+                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+            })
+            .AddSingleton<DiscordSocketClient>()
+            .AddSingleton<CommandService>()
+            .AddSingleton<CommandHandlingService>()
+            .AddSingleton<HttpClient>()
+            .BuildServiceProvider();
+    }
+
+    private Task LogAsync(LogMessage log)
+    {
+        Console.WriteLine(log.ToString());
         return Task.CompletedTask;
     }
 }
