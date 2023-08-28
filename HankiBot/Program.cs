@@ -33,6 +33,9 @@ public class Program
         // Here we initialize the logic required to register our commands.
         await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
 
+        // Initialize Twitch service for now live notifications
+        services.GetRequiredService<TwitchService>();
+
         await Task.Delay(Timeout.Infinite);
     }
 
@@ -46,6 +49,7 @@ public class Program
             .AddSingleton<DiscordSocketClient>()
             .AddSingleton<CommandService>()
             .AddSingleton<CommandHandlingService>()
+            .AddSingleton<TwitchService>()
             .AddSingleton<HttpClient>()
             .BuildServiceProvider();
     }
