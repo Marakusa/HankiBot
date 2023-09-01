@@ -19,7 +19,7 @@ public class GeneralModule : ModuleBase<SocketCommandContext>
     [Summary("List all the commands for the bot")]
     public async Task HelpAsync()
     {
-        Dictionary<string, List<CommandInfo>> groupedCommands = GetGroupedCommands();
+        Dictionary<string, List<CommandInfo>> groupedCommands = GetGroupedCommands(Context);
 
         EmbedBuilder builder = new()
         {
@@ -43,7 +43,7 @@ public class GeneralModule : ModuleBase<SocketCommandContext>
         await ReplyAsync(embed: embed);
     }
 
-    private static Dictionary<string, List<CommandInfo>> GetGroupedCommands()
+    private static Dictionary<string, List<CommandInfo>> GetGroupedCommands(SocketCommandContext context)
     {
         var groupedCommands = new Dictionary<string, List<CommandInfo>>();
 
@@ -56,6 +56,10 @@ public class GeneralModule : ModuleBase<SocketCommandContext>
 
         foreach (Type moduleClass in moduleClasses)
         {
+            bool configChannel = ValidateConfigCommand(context);
+            if (moduleClass.GetCustomAttributes(typeof(IgnoreAttribute), false).Length > 0 && !configChannel)
+                continue;
+
             CommandGroupAttribute? groupAttribute = moduleClass.GetCustomAttribute<CommandGroupAttribute>();
             List<CommandInfo> commandMethods = moduleClass.GetMethods()
                 .Where(method => method.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0 &&
@@ -71,12 +75,20 @@ public class GeneralModule : ModuleBase<SocketCommandContext>
 
             string groupName = groupAttribute?.Title ?? "General";
 
-            if (!groupedCommands.ContainsKey(groupName)) groupedCommands[groupName] = new List<CommandInfo>();
+            if (!groupedCommands.ContainsKey(groupName))
+                groupedCommands[groupName] = new List<CommandInfo>();
 
             groupedCommands[groupName].AddRange(commandMethods);
         }
 
         return groupedCommands;
+    }
+
+    private static bool ValidateConfigCommand(SocketCommandContext context)
+    {
+        bool owner = context.Guild.OwnerId == context.User.Id;
+        string configChannel = Configs.GetServerConfig(context.Guild.Id)!.ConfigChannel!;
+        return owner && context.Channel.Id.ToString() == configChannel;
     }
 
     private static Dictionary<string, string> GetCommandParameters(MethodInfo method)

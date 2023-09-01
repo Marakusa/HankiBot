@@ -7,6 +7,4 @@ public class Configurations
     public string[]? BonkImages { get; set; }
     public string? TwitchClientId { get; set; }
     public string? TwitchClientSecret { get; set; }
-    public string[]? TwitchChannels { get; set; }
-    public int? TwitchNotificationsChannel { get; set; }
 }

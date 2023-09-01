@@ -1,13 +1,19 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using HankiBot.Models;
 using HankiBot.Services;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using Discord.Rest;
+using System.Threading.Channels;
 
 namespace HankiBot;
 
 public class Program
 {
+    private DiscordSocketClient? _client;
+    
     private static void Main(string[] args)
     {
         new Program()
@@ -20,23 +26,73 @@ public class Program
     {
         await using ServiceProvider services = ConfigureServices();
 
-        DiscordSocketClient client = services.GetRequiredService<DiscordSocketClient>();
+        _client = services.GetRequiredService<DiscordSocketClient>();
 
-        client.Log += LogAsync;
+        _client.Connected += Connected;
+        _client.Log += LogAsync;
+        _client.JoinedGuild += GuildJoined;
+        _client.ChannelDestroyed += ChannelDeleted;
         services.GetRequiredService<CommandService>().Log += LogAsync;
         
-        await client.LoginAsync(TokenType.Bot, Globals.Token);
-        await client.StartAsync();
+        await _client.LoginAsync(TokenType.Bot, Globals.Token);
+        await _client.StartAsync();
 
-        await client.SetCustomStatusAsync($"With the rubber rats | {Globals.CommandPrefix}h");
+        await _client.SetCustomStatusAsync($"With the rubber rats | {Globals.CommandPrefix}h");
 
         // Here we initialize the logic required to register our commands.
         await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
 
         // Initialize Twitch service for now live notifications
         services.GetRequiredService<TwitchService>();
-
+        
         await Task.Delay(Timeout.Infinite);
+    }
+
+    private async Task Connected()
+    {
+        if (_client?.Guilds == null) return;
+        foreach (SocketGuild guild in _client.Guilds)
+        {
+            Configs.AddServer(guild);
+            ServerConfig? config = Configs.GetServerConfig(guild.Id);
+            await InitServerAsync(config!, guild);
+        }
+    }
+
+    private static async Task InitServerAsync(ServerConfig config, SocketGuild guild)
+    {
+        while (!guild.IsConnected) await Task.Delay(1000);
+
+        SocketGuildChannel? configChannel = guild.TextChannels.FirstOrDefault(f => f.Id.ToString() == config.ConfigChannel);
+        if (configChannel == null)
+        {
+            RestTextChannel? channel = await guild.CreateTextChannelAsync("hanki-bot-config");
+            await channel.AddPermissionOverwriteAsync(guild.EveryoneRole, OverwritePermissions.DenyAll(channel));
+            config.ConfigChannel = channel.Id.ToString();
+        }
+        else
+        {
+            config.ConfigChannel = configChannel.Id.ToString();
+        }
+
+        Configs.Save(config);
+    }
+
+    private static async Task GuildJoined(SocketGuild arg)
+    {
+        Configs.AddServer(arg);
+        ServerConfig? config = Configs.GetServerConfig(arg.Id);
+        await InitServerAsync(config!, arg);
+    }
+
+    private async Task ChannelDeleted(SocketChannel arg)
+    {
+        foreach (SocketGuild guild in _client?.Guilds ?? new List<SocketGuild>())
+        {
+            Configs.AddServer(guild);
+            ServerConfig? config = Configs.GetServerConfig(guild.Id);
+            await InitServerAsync(config!, guild);
+        }
     }
 
     private static ServiceProvider ConfigureServices()

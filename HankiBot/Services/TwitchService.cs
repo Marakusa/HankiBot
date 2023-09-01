@@ -1,7 +1,5 @@
-﻿using System;
-using System.Globalization;
-using System.IO;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
+using System.Threading.Channels;
 using Discord;
 using Discord.WebSocket;
 using HankiBot.Models;
@@ -19,7 +17,7 @@ public class TwitchService
     private readonly Timer _timer;
     private string? _accessToken;
 
-    private readonly Dictionary<string, string> _streams = new();
+    private readonly Dictionary<string, string> _streams;
 
     public TwitchService(IServiceProvider services)
     {
@@ -50,64 +48,74 @@ public class TwitchService
     {
         if (_accessToken == null) await UpdateAuthAsync();
 
-        foreach (string channel in Globals.TwitchChannels!)
+        List<ServerConfig> configs = Configs.GetAllServerConfig();
+
+        foreach (ServerConfig config in configs)
         {
-            TwitchSearchChannel? channelData =
-                await ApiGetRequestAsync<TwitchSearchChannel>(
-                    $"https://api.twitch.tv/helix/search/channels?query={channel}");
-
-            TwitchSearchChannelData? c = channelData?.Data.Find(f =>
-                string.Equals(f.BroadcasterLogin, channel, StringComparison.CurrentCultureIgnoreCase));
-
-            if (c == null)
-            {
+            if (config.TwitchNotificationChannel == null)
                 continue;
-            }
 
-            TwitchStreams? streamsData =
-                await ApiGetRequestAsync<TwitchStreams>(
-                    $"https://api.twitch.tv/helix/streams?user_login={c.BroadcasterLogin}");
-            
-            if (streamsData == null || streamsData.Data.Count <= 0)
+            foreach (string channel in config.TwitchChannels ?? new List<string>())
             {
-                continue;
-            }
+                TwitchSearchChannel? channelData =
+                    await ApiGetRequestAsync<TwitchSearchChannel>(
+                        $"https://api.twitch.tv/helix/search/channels?query={channel}");
 
-            TwitchStreamsData stream = streamsData.Data[0];
+                TwitchSearchChannelData? c = channelData?.Data.Find(f =>
+                    string.Equals(f.BroadcasterLogin, channel, StringComparison.CurrentCultureIgnoreCase));
 
-            // If the stream has been mentioned before, don't notify again
-            _streams.TryAdd(c.BroadcasterLogin, "");
-            if (_streams[c.BroadcasterLogin] == stream.Id) return;
-            _streams[c.BroadcasterLogin] = stream.Id;
-
-            // Create an embed for Discord
-            EmbedBuilder embedBuilder = new()
-            {
-                Title = stream.UserName,
-                Description = $"[{stream.Title}](https://www.twitch.tv/{stream.UserName})",
-                Url = $"https://www.twitch.tv/{stream.UserName}",
-                Color = new Color(149, 99, 245),
-                Fields = new List<EmbedFieldBuilder>
+                if (c == null)
                 {
-                    new()
-                    {
-                        Name = "Playing:",
-                        Value = stream.GameName,
-                        IsInline = true
-                    },
-                    new()
-                    {
-                        Name = "Viewers:",
-                        Value = stream.ViewerCount.ToString(),
-                        IsInline = true
-                    }
-                },
-                ImageUrl = $"https://static-cdn.jtvnw.net/previews-ttv/live_user_{stream.UserName}-640x360.jpg?cacheBypass={Guid.NewGuid()}",
-                ThumbnailUrl = c.ThumbnailUrl
-            };
+                    continue;
+                }
 
-            IMessageChannel? discordChannel = await _discord.GetChannelAsync((ulong) Globals.TwitchNotificationsChannel!) as IMessageChannel;
-            await discordChannel?.SendMessageAsync(embed: embedBuilder.Build())!;
+                TwitchStreams? streamsData =
+                    await ApiGetRequestAsync<TwitchStreams>(
+                        $"https://api.twitch.tv/helix/streams?user_login={c.BroadcasterLogin}");
+
+                if (streamsData == null || streamsData.Data.Count <= 0)
+                {
+                    continue;
+                }
+
+                TwitchStreamsData stream = streamsData.Data[0];
+
+                // If the stream has been mentioned before, don't notify again
+                _streams.TryAdd(c.BroadcasterLogin, "");
+                if (_streams[c.BroadcasterLogin] == stream.Id) return;
+                _streams[c.BroadcasterLogin] = stream.Id;
+
+                // Create an embed for Discord
+                EmbedBuilder embedBuilder = new()
+                {
+                    Title = stream.UserName,
+                    Description = $"[{stream.Title}](https://www.twitch.tv/{stream.UserName})",
+                    Url = $"https://www.twitch.tv/{stream.UserName}",
+                    Color = new Color(149, 99, 245),
+                    Fields = new List<EmbedFieldBuilder>
+                    {
+                        new()
+                        {
+                            Name = "Playing:",
+                            Value = stream.GameName,
+                            IsInline = true
+                        },
+                        new()
+                        {
+                            Name = "Viewers:",
+                            Value = stream.ViewerCount.ToString(),
+                            IsInline = true
+                        }
+                    },
+                    ImageUrl =
+                        $"https://static-cdn.jtvnw.net/previews-ttv/live_user_{stream.UserName}-640x360.jpg?cacheBypass={Guid.NewGuid()}",
+                    ThumbnailUrl = c.ThumbnailUrl
+                };
+
+                IMessageChannel? discordChannel =
+                    await _discord.GetChannelAsync(ulong.Parse(config.TwitchNotificationChannel)) as IMessageChannel;
+                await discordChannel?.SendMessageAsync(embed: embedBuilder.Build())!;
+            }
         }
     }
 

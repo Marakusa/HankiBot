@@ -10,6 +10,4 @@ public static class Globals
     public static string[]? BonkImages => JsonConvert.DeserializeObject<Configurations>(File.ReadAllText("config.json"))?.BonkImages;
     public static string? TwitchClientId => JsonConvert.DeserializeObject<Configurations>(File.ReadAllText("config.json"))?.TwitchClientId;
     public static string? TwitchClientSecret => JsonConvert.DeserializeObject<Configurations>(File.ReadAllText("config.json"))?.TwitchClientSecret;
-    public static string[]? TwitchChannels => JsonConvert.DeserializeObject<Configurations>(File.ReadAllText("config.json"))?.TwitchChannels;
-    public static int? TwitchNotificationsChannel => JsonConvert.DeserializeObject<Configurations>(File.ReadAllText("config.json"))?.TwitchNotificationsChannel;
 }
