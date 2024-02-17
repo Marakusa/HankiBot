@@ -43,7 +43,7 @@ public class Program
         await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
 
         // Initialize Twitch service for now live notifications
-        services.GetRequiredService<TwitchService>();
+        services.GetRequiredService<TwitterService>();
         
         await Task.Delay(Timeout.Infinite);
     }
@@ -105,7 +105,7 @@ public class Program
             .AddSingleton<DiscordSocketClient>()
             .AddSingleton<CommandService>()
             .AddSingleton<CommandHandlingService>()
-            .AddSingleton<TwitchService>()
+            //.AddSingleton<TwitterService>()
             .AddSingleton<HttpClient>()
             .BuildServiceProvider();
     }

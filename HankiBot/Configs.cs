@@ -27,7 +27,7 @@ public static class Configs
         ServerConfig config = new()
         {
             ServerId = serverConfig.Id.ToString(),
-            TwitchNotificationChannel = "",
+            TwitterNotificationChannel = "",
             TwitchChannels = new List<string>()
         };
         AddServer(config);
