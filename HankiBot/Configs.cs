@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using System.Globalization;
+using Discord.WebSocket;
 using HankiBot.Models;
 using Newtonsoft.Json;
 
@@ -7,6 +8,7 @@ namespace HankiBot;
 public static class Configs
 {
     private static Dictionary<string, ServerConfig>? _serverConfigs;
+    private static GeneralConfig? _generalConfig;
 
     public static void AddServer(ServerConfig serverConfig)
     {
@@ -28,6 +30,7 @@ public static class Configs
         {
             ServerId = serverConfig.Id.ToString(),
             TwitterNotificationChannel = "",
+            DailyFoxChannel = "",
             TwitchChannels = new List<string>()
         };
         AddServer(config);
@@ -52,6 +55,22 @@ public static class Configs
         return configs;
     }
 
+    public static DateTime GetNextFoxTime()
+    {
+        CheckConfigs();
+        return DateTime.Parse(_generalConfig?.NextFoxTime!, CultureInfo.InvariantCulture);
+    }
+
+    public static void SetNextFoxTime(DateTime time)
+    {
+        _generalConfig ??= new GeneralConfig
+        {
+            NextFoxTime = DateTime.Parse("1970-01-01T00:00:00.000Z").ToString("O", CultureInfo.InvariantCulture)
+        };
+        _generalConfig.NextFoxTime = time.ToString("O", CultureInfo.InvariantCulture);
+        SaveConfigs();
+    }
+
     private static void SaveConfigs()
     {
         var configs = new List<ServerConfig>();
@@ -61,22 +80,37 @@ public static class Configs
             configs.Add(c);
 
         File.WriteAllText("servers.json", JsonConvert.SerializeObject(configs));
+        File.WriteAllText("generalConfigs.json", JsonConvert.SerializeObject(_generalConfig));
     }
 
     private static void CheckConfigs()
     {
         _serverConfigs ??= new Dictionary<string, ServerConfig>();
+        _generalConfig ??= null;
 
         ServerConfig[]? configs = null;
 
         if (File.Exists("servers.json"))
             configs = JsonConvert.DeserializeObject<ServerConfig[]>(File.ReadAllText("servers.json"));
 
+        if (File.Exists("generalConfigs.json"))
+            _generalConfig = JsonConvert.DeserializeObject<GeneralConfig>(File.ReadAllText("generalConfigs.json"));
+
         _serverConfigs = new Dictionary<string, ServerConfig>();
 
         if (configs == null)
         {
             File.WriteAllText("servers.json", "[]");
+            return;
+        }
+
+        if (_generalConfig == null)
+        {
+            _generalConfig = new GeneralConfig
+            {
+                NextFoxTime = DateTime.Parse("1970-01-01T00:00:00.000Z").ToString("O", CultureInfo.InvariantCulture)
+            };
+            File.WriteAllText("generalConfigs.json", JsonConvert.SerializeObject(_generalConfig));
             return;
         }
 

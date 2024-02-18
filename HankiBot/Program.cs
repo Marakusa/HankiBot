@@ -41,9 +41,8 @@ public class Program
 
         // Here we initialize the logic required to register our commands.
         await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
-
-        // Initialize Twitch service for now live notifications
-        services.GetRequiredService<TwitterService>();
+        
+        services.GetRequiredService<DailyFoxService>();
         
         await Task.Delay(Timeout.Infinite);
     }
@@ -106,6 +105,7 @@ public class Program
             .AddSingleton<CommandService>()
             .AddSingleton<CommandHandlingService>()
             //.AddSingleton<TwitterService>()
+            .AddSingleton<DailyFoxService>()
             .AddSingleton<HttpClient>()
             .BuildServiceProvider();
     }
