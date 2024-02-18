@@ -1,19 +1,7 @@
-﻿using System;
-using System.Globalization;
-using System.IO;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Threading.Channels;
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
 using HankiBot.Models;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using TwitterSharp.Client;
-using TwitterSharp.Request.AdvancedSearch;
-using TwitterSharp.Request.Option;
-using TwitterSharp.Response.RTweet;
-using static System.Net.Mime.MediaTypeNames;
 using Timer = System.Timers.Timer;
 
 namespace HankiBot.Services;
@@ -98,7 +86,8 @@ public class DailyFoxService
                     IMessageChannel? discordChannel =
                         (IMessageChannel?)await _discord.GetChannelAsync(ulong.Parse(serverConfig.DailyFoxChannel));
                     await using FileStream fileStream = File.OpenRead(filePath);
-                    await discordChannel?.SendFileAsync(fileStream, "foxTemp.jpg", embed: embedBuilder.Build())!;
+                    IUserMessage? message = await discordChannel?.SendFileAsync(fileStream, "foxTemp.jpg", embed: embedBuilder.Build())!;
+                    await message.AddReactionAsync(new Emoji("❤️"));
                 }
                 catch (Exception ex)
                 {

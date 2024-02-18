@@ -4,9 +4,7 @@ using Discord.WebSocket;
 using HankiBot.Models;
 using HankiBot.Services;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using Discord.Rest;
-using System.Threading.Channels;
 
 namespace HankiBot;
 

@@ -1,9 +1,6 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.WebSocket;
 using HankiBot.Models;
-using Newtonsoft.Json;
-using System.Threading.Channels;
 
 namespace HankiBot.Commands;
 
