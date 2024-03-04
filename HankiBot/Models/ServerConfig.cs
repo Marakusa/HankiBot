@@ -7,5 +7,7 @@
         public List<string>? TwitchChannels { get; set; }
         public string? ConfigChannel { get; set; }
         public string? DailyFoxChannel { get; set; }
+        public string? SuggestionChannel { get; set; }
+        public int SuggestionCount { get; set; }
     }
 }

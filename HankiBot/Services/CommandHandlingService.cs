@@ -1,7 +1,10 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
+using System.Threading.Channels;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using HankiBot.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HankiBot.Services;
@@ -43,7 +46,65 @@ public class CommandHandlingService
         int argPos = 0;
         // Perform prefix check
         if (!message.HasStringPrefix(Globals.CommandPrefix, ref argPos))
+        {
+            List<ServerConfig> configs = Configs.GetAllServerConfig();
+
+            foreach (ServerConfig config in configs.Where(config => !string.IsNullOrEmpty(config.SuggestionChannel)))
+            {
+                try
+                {
+                    ulong channelId = ulong.Parse(config.SuggestionChannel ?? "0");
+                    if (channelId != rawMessage.Channel.Id)
+                    {
+                        continue;
+                    }
+
+                    // Create an embed for Discord
+                    EmbedBuilder embedBuilder = new()
+                    {
+                        Title = $"Suggestion #{config.SuggestionCount + 1}",
+                        Color = new Color(224, 31, 64),
+                        Description = rawMessage.Content,
+                        Author = new EmbedAuthorBuilder
+                        {
+                            Name = rawMessage.Author.Username,
+                            IconUrl = rawMessage.Author.GetAvatarUrl()
+                        }
+                    };
+
+                    IMessageChannel? discordChannel = (IMessageChannel?)await _discord.GetChannelAsync(channelId);
+                    IUserMessage? suggestion = await discordChannel!.SendMessageAsync(embed: embedBuilder.Build());
+
+                    try
+                    {
+                        await rawMessage.DeleteAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to delete original message: {ex}");
+                    }
+
+                    try
+                    {
+                        await suggestion.AddReactionAsync(Emoji.Parse(":arrow_up:"));
+                        await suggestion.AddReactionAsync(Emoji.Parse(":arrow_down:"));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to add votes on suggestion: {ex}");
+                    }
+                    
+                    config.SuggestionCount++;
+                    Configs.Save(config);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to handle suggestion on server: {ex}");
+                }
+            }
+
             return;
+        }
 
         SocketCommandContext context = new(_discord, message);
         // Perform the execution of the command. In this method,
