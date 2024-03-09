@@ -28,7 +28,7 @@ public class FunModule : ModuleBase<SocketCommandContext>
     [Summary("See how cute you are today")]
     public async Task CuteAsync()
     {
-        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(1, Context.User.Id, DateTime.Today.DayOfYear)}% cute!");
+        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(1, Context.User.Id, DateTime.Today.DayOfYear)}% cute today!");
     }
 
     [Command("howstinkyami")]
@@ -38,7 +38,7 @@ public class FunModule : ModuleBase<SocketCommandContext>
         int stinky = FunUtils.CalculateRandom(2, Context.User.Id, DateTime.Today.DayOfYear, 2);
         string comment = stinky switch
         {
-            0 => "Smells wonderful!",
+            0 => "You smell wonderful today!",
             1 => "*sniffs* Sniff test passed.",
             _ => "You stimky bean!"
         };
@@ -49,20 +49,20 @@ public class FunModule : ModuleBase<SocketCommandContext>
     [Summary("See how furry you are today")]
     public async Task FurryAsync()
     {
-        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(3, Context.User.Id, DateTime.Today.DayOfYear)}% furry!");
+        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(3, Context.User.Id, DateTime.Today.DayOfYear)}% furry today!");
     }
 
     [Command("howhornyami")]
     [Summary("See how horny you are today")]
     public async Task HornyAsync()
     {
-        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(4, Context.User.Id, DateTime.Today.DayOfYear)}% horny!");
+        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(4, Context.User.Id, DateTime.Today.DayOfYear)}% horny today!");
     }
 
     [Command("howvornyami")]
     [Summary("See how vorny you are today")]
     public async Task VornyAsync()
     {
-        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(5, Context.User.Id, DateTime.Today.DayOfYear)}% vorny!");
+        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(5, Context.User.Id, DateTime.Today.DayOfYear)}% vorny today!");
     }
 }
