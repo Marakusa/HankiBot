@@ -52,7 +52,14 @@ public class FunModule : ModuleBase<SocketCommandContext>
         await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(3, Context.User.Id, DateTime.Today.DayOfYear)}% furry today!");
     }
 
-    [Command("howhornyami")]
+    [Command("howsillyami")]
+    [Summary("See how silly you are feeling today")]
+    public async Task SillyAsync()
+    {
+        await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are feeling {FunUtils.CalculateRandom(6, Context.User.Id, DateTime.Today.DayOfYear)}% silly today!");
+    }
+
+    /*[Command("howhornyami")]
     [Summary("See how horny you are today")]
     public async Task HornyAsync()
     {
@@ -64,5 +71,5 @@ public class FunModule : ModuleBase<SocketCommandContext>
     public async Task VornyAsync()
     {
         await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are {FunUtils.CalculateRandom(5, Context.User.Id, DateTime.Today.DayOfYear)}% vorny today!");
-    }
+    }*/
 }
