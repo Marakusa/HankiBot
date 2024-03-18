@@ -21,26 +21,22 @@ public class GeneralModule : ModuleBase<SocketCommandContext>
     {
         Dictionary<string, List<CommandInfo>> groupedCommands = GetGroupedCommands(Context);
 
-        EmbedBuilder builder = new()
-        {
-            Title = "List of available commands"
-        };
+        string body = "# List of available commands";
 
         foreach (KeyValuePair<string, List<CommandInfo>> group in groupedCommands)
         {
             IEnumerable<string> commandsInfo = group.Value.Select(cmd =>
             {
                 string parameters = string.Join(" ", cmd.Parameters.Select(param => $"[{param.Key}]"));
-                string parametersList = string.Join("\n", cmd.Parameters.Select(param => $"*{param.Key}*: {param.Value}"));
+                string parametersList = string.Join("\n", cmd.Parameters.Select(param => $"\t{param.Key}: {param.Value}"));
                 return
-                    $"**{Globals.CommandPrefix}{cmd.Command}{(parameters.Length > 0 ? " " + parameters : "")}**: {cmd.Summary}{(parametersList.Length > 0 ? "\n " + parametersList : "")}";
+                    $"{Globals.CommandPrefix}{cmd.Command}{(parameters.Length > 0 ? " " + parameters : "")} : {cmd.Summary}{(parametersList.Length > 0 ? "\n" + parametersList : "")}";
             });
 
-            builder.AddField(group.Key, string.Join(Environment.NewLine, commandsInfo));
+            body += $"\n## {group.Key}\n```{string.Join(Environment.NewLine, commandsInfo)}```";
         }
 
-        Embed? embed = builder.Build();
-        await ReplyAsync(embed: embed);
+        await ReplyAsync(body);
     }
 
     private static Dictionary<string, List<CommandInfo>> GetGroupedCommands(SocketCommandContext context)
@@ -78,7 +74,8 @@ public class GeneralModule : ModuleBase<SocketCommandContext>
             if (!groupedCommands.ContainsKey(groupName))
                 groupedCommands[groupName] = new List<CommandInfo>();
 
-            groupedCommands[groupName].AddRange(commandMethods);
+            IOrderedEnumerable<CommandInfo> orderedEnumerable = commandMethods.OrderBy(o => o.Command);
+            groupedCommands[groupName].AddRange(orderedEnumerable);
         }
 
         return groupedCommands;

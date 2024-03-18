@@ -47,6 +47,8 @@ public class Program
 
     private async Task Connected()
     {
+        Globals.Self = _client?.CurrentUser;
+
         if (_client?.Guilds == null) return;
         foreach (SocketGuild guild in _client.Guilds)
         {

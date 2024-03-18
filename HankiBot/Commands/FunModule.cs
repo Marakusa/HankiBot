@@ -20,7 +20,19 @@ public class FunModule : ModuleBase<SocketCommandContext>
     [Summary("Bonk someone")]
     public async Task BonkAsync([Summary("Who is getting bonked")] SocketUser target)
     {
-        await ReplyAsync($"{Context.User.Mention} bonks {target.Mention}!");
+        if (target.Id == Globals.Self?.Id)
+        {
+            await ReplyAsync($"{Context.User.Mention} Hey mister! You can't bonk me..");
+            return;
+        }
+
+        if (target.Id == Context.User.Id)
+        {
+            await ReplyAsync($"Why would you do that {Context.User.Mention}?");
+            return;
+        }
+
+        await ReplyAsync($"*{Context.User.Mention} bonks {target.Mention}!*");
         await ReplyAsync(FunUtils.PickRandom(Globals.BonkImages!));
     }
 
@@ -57,6 +69,41 @@ public class FunModule : ModuleBase<SocketCommandContext>
     public async Task SillyAsync()
     {
         await Context.Channel.SendMessageAsync($"{Context.User.Mention} You are feeling {FunUtils.CalculateRandom(6, Context.User.Id, DateTime.Today.DayOfYear)}% silly today!");
+    }
+
+    [Command("flipacoin")]
+    [Summary("Flip a coin")]
+    public async Task CoinFlipAsync()
+    {
+        await Context.Channel.SendMessageAsync(
+            $"*{Context.User.Mention} flipped a coin that landed on **{FunUtils.PickRandom(new[] { "HEADS", "TAILS" })}***");
+    }
+
+    [Command("hug")]
+    [Ignore]
+    public async Task HugAsync()
+    {
+        await ReplyAsync(
+            $"{Context.User.Mention} Who do you want to hug? Include their name after {Globals.CommandPrefix}hug [target].");
+    }
+
+    [Command("hug")]
+    [Summary("Hug someone")]
+    public async Task HugAsync([Summary("Who is getting hugged")] SocketUser target)
+    {
+        if (target.Id == Globals.Self?.Id)
+        {
+            await ReplyAsync($"{Context.User.Mention} Aww that's sweet! *hugs*");
+            return;
+        }
+
+        if (target.Id == Context.User.Id)
+        {
+            await ReplyAsync($"*{Context.User.Mention} hugs themselves*");
+            return;
+        }
+
+        await ReplyAsync($"*{Context.User.Mention} hugs {target.Mention}!* :3");
     }
 
     /*[Command("howhornyami")]
